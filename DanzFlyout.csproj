@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ApplicationIcon>Assets\DanzFlyout.ico</ApplicationIcon>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>DanzFlyout</AssemblyName>
+    <RootNamespace>DanzFlyout</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DanzFlyout.ico" />
+  </ItemGroup>
+
+  <Target Name="KillDanzFlyoutBeforeAny" BeforeTargets="BeforeBuild;BeforeClean">
+    <Exec Command="taskkill /f /im DanzFlyout.exe 2&gt;nul || exit 0" ContinueOnError="true" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="WPF-UI" Version="3.0.5" />
+    <PackageReference Include="NAudio.Wasapi" Version="22.0.0" />
+  </ItemGroup>
+
+</Project>

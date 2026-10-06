@@ -1,0 +1,130 @@
+<Window x:Class="DanzFlyout.LockKeysFlyout"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LockKeysFlyout"
+        Height="118" Width="324"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Opacity="0">
+
+    <!-- Outer margin (28) is room for the soft shadow so it never gets cut into a hard bar -->
+    <Grid Margin="28">
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="PillTranslate" Y="-10"/>
+        </Grid.RenderTransform>
+
+        <Border x:Name="PillBorder"
+                CornerRadius="22"
+                BorderThickness="1">
+
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#50FFFFFF" Offset="0.0"/>
+                    <GradientStop Color="#16FFFFFF" Offset="0.5"/>
+                    <GradientStop Color="#2C8C9CFF" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+
+            <!-- Near-opaque so the shadow can't show through the card -->
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#F21B1E29" Offset="0.0"/>
+                    <GradientStop Color="#F2121520" Offset="1.0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="30" Color="#000000" Opacity="0.42" Direction="270" ShadowDepth="6"/>
+            </Border.Effect>
+
+            <Grid>
+                <!-- Top sheen -->
+                <Border Height="1" VerticalAlignment="Top" Margin="24,0" IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#00FFFFFF" Offset="0.0"/>
+                            <GradientStop Color="#40FFFFFF" Offset="0.5"/>
+                            <GradientStop Color="#00FFFFFF" Offset="1.0"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+
+                <Grid Margin="16,0,18,0" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Icon badge -->
+                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="13"
+                            Background="#1CFFFFFF" BorderBrush="#18FFFFFF" BorderThickness="1"
+                            VerticalAlignment="Center" Margin="0,0,13,0">
+                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path x:Name="LockIconPath"
+                                  Data="M 4,7 L 4,4.5 C 4,2.5 5.5,1 7.5,1 C 9.5,1 11,2.5 11,4.5 L 11,7 M 2,7 L 13,7 C 14.1,7 15,7.9 15,9 L 15,15 C 15,16.1 14.1,17 13,17 L 2,17 C 0.9,17 0,16.1 0,15 L 0,9 C 0,7.9 0.9,7 2,7 Z"
+                                  Stroke="#F4F6FF"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"/>
+                        </Viewbox>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="LockText"
+                                   Text="Caps Lock"
+                                   FontSize="15"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFFFFF"/>
+                        <TextBlock x:Name="LockState"
+                                   Text="On"
+                                   FontSize="11.5"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI"
+                                   Foreground="#8A93AD"
+                                   Margin="0,1,0,0"/>
+                    </StackPanel>
+
+                    <!-- Switch -->
+                    <Border x:Name="ToggleTrack"
+                            Grid.Column="2"
+                            Width="52" Height="28"
+                            CornerRadius="14"
+                            BorderThickness="1"
+                            BorderBrush="#35FFFFFF"
+                            Background="#25FFFFFF"
+                            VerticalAlignment="Center">
+                        <Grid>
+                            <Border CornerRadius="13" Height="12" VerticalAlignment="Top">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#30FFFFFF" Offset="0.0"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+
+                            <Canvas Width="50" Height="26" ClipToBounds="True">
+                                <Border x:Name="ToggleThumb"
+                                        Width="22" Height="22"
+                                        CornerRadius="11"
+                                        BorderThickness="1"
+                                        BorderBrush="#90FFFFFF"
+                                        Background="#75FFFFFF"
+                                        Canvas.Top="2" Canvas.Left="2">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="ThumbTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Canvas>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
