@@ -43,3 +43,30 @@ dotnet restore
 
 # 3. Build Release version
 dotnet build -c Release
+```
+
+---
+
+## Tech Stack & Architecture
+
+- **UI Framework**: WPF (.NET)
+- **Audio Capture & DSP**: NAudio (WASAPI Loopback Capture, 1024-point FFT)
+- **Native Interop**: Win32 API (`user32.dll`) via P/Invoke (Window styles, Z-ordering, Fullscreen detection)
+- **Installer**: Inno Setup
+
+---
+
+## Author
+
+**Danz (Dannel Bert Lomtong)**  
+*IT Student & Developer*
+
+- GitHub: [@Dalandanz10](https://github.com/Dalandanz10)
+
+*DanzFlyout was built as an exploration into real-time audio DSP, multithreaded systems programming in .NET, and Windows desktop UX engineering.*
+
+---
+
+## License
+
+This project is licensed under the MIT License.
