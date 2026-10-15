@@ -4,6 +4,10 @@ A lightweight, modern Windows desktop utility and taskbar audio visualizer built
 
 ---
 
+![DanzFlyout Preview](assets/preview.gif)
+
+---
+
 ## Features
 
 - **Fluid Wave Taskbar Visualizer**: Real-time audio spectral capture using NAudio WASAPI loopback, rendering smooth dual-harmonic waveforms with soft-knee dynamic compression (`tanh`) to prevent taskbar overflow without flattening peaks.
