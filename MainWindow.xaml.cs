@@ -11,6 +11,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Threading;
+using System.Threading.Tasks;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 using Application = System.Windows.Application;
@@ -27,6 +29,13 @@ namespace DanzFlyout
         private bool _isMouseOver = false;
         private string _lastTrackId = string.Empty;
         private bool _isCardVisible = false;
+
+        // Media-session synchronization is intentionally serialized and queued so
+        // Windows media events never block the WPF UI thread.
+        private readonly SemaphoreSlim _sessionSyncGate = new(1, 1);
+        private int _sessionSyncQueued;
+        private int _mediaRefreshVersion;
+        private bool _isClosing;
 
         public bool UseAdaptiveAlbumColor { get; set; } = true;
 
@@ -100,7 +109,6 @@ namespace DanzFlyout
             int renderingPolicy = DWMNCRP_DISABLED;
             DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref renderingPolicy, sizeof(int));
 
-            WindowBackdropHelper.ApplyAcrylic(hwnd, darkMode: true);
             ApplyPlacementSettings();
         }
 
@@ -157,196 +165,379 @@ namespace DanzFlyout
         {
             try
             {
-                _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                _sessionManager =
+                    await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
 
-                if (_sessionManager != null)
-                {
-                    _sessionManager.CurrentSessionChanged += (s, args) => Dispatcher.Invoke(SyncSession);
-                    _sessionManager.SessionsChanged += (s, args) => Dispatcher.Invoke(SyncSession);
-                    SyncSession();
-                }
+                if (_sessionManager == null)
+                    return;
+
+                _sessionManager.CurrentSessionChanged +=
+                    (s, args) => QueueSessionSync();
+
+                _sessionManager.SessionsChanged +=
+                    (s, args) => QueueSessionSync();
+
+                QueueSessionSync();
             }
             catch (Exception ex)
             {
                 var titleBlock = FindName("TrackTitle") as TextBlock;
                 var artistBlock = FindName("TrackArtist") as TextBlock;
-                if (titleBlock != null) titleBlock.Text = "SMTC Error";
-                if (artistBlock != null) artistBlock.Text = ex.Message;
+
+                if (titleBlock != null)
+                    titleBlock.Text = "SMTC Error";
+
+                if (artistBlock != null)
+                    artistBlock.Text = ex.Message;
             }
         }
 
-        private void SyncSession()
+        private void QueueSessionSync()
         {
-            if (_sessionManager == null) return;
+            if (_isClosing)
+                return;
 
-            if (_currentSession != null)
-            {
-                _currentSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-                _currentSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-            }
+            // Collapse a burst of Windows media events into one UI operation.
+            if (Interlocked.Exchange(ref _sessionSyncQueued, 1) != 0)
+                return;
 
-            var sessions = _sessionManager.GetSessions();
-            GlobalSystemMediaTransportControlsSession? bestSession = null;
-
-            foreach (var session in sessions)
-            {
-                string appId = session.SourceAppUserModelId.ToLowerInvariant();
-                bool isMusicApp = appId.Contains("spotify") || appId.Contains("applemusic") ||
-                                  appId.Contains("tidal") || appId.Contains("deezer");
-
-                if (isMusicApp)
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(async () =>
                 {
-                    var playbackInfo = session.GetPlaybackInfo();
-                    if (playbackInfo != null && playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                    Interlocked.Exchange(ref _sessionSyncQueued, 0);
+                    await SyncSessionAsync();
+                }));
+        }
+
+        private async Task SyncSessionAsync()
+        {
+            if (_isClosing || _sessionManager == null)
+                return;
+
+            // Never allow two session scans to run at the same time.
+            if (!await _sessionSyncGate.WaitAsync(0))
+                return;
+
+            try
+            {
+                var manager = _sessionManager;
+
+                // These Windows media calls are kept off the WPF UI thread.
+                var sessions = await Task.Run(() => manager.GetSessions());
+                GlobalSystemMediaTransportControlsSession? bestSession = null;
+
+                foreach (var session in sessions)
+                {
+                    if (_isClosing)
+                        return;
+
+                    string appId =
+                        session.SourceAppUserModelId.ToLowerInvariant();
+
+                    bool isMusicApp =
+                        appId.Contains("spotify") ||
+                        appId.Contains("applemusic") ||
+                        appId.Contains("tidal") ||
+                        appId.Contains("deezer");
+
+                    if (!isMusicApp)
+                        continue;
+
+                    var playbackInfo =
+                        await Task.Run(() => session.GetPlaybackInfo());
+
+                    if (playbackInfo != null &&
+                        playbackInfo.PlaybackStatus ==
+                        GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
                     {
                         bestSession = session;
                         break;
                     }
                 }
-            }
 
-            _currentSession = bestSession ?? _sessionManager.GetCurrentSession();
+                var selectedSession =
+                    bestSession ??
+                    await Task.Run(() => manager.GetCurrentSession());
 
-            if (_currentSession != null)
-            {
-                _currentSession.MediaPropertiesChanged += OnMediaPropertiesChanged;
-                _currentSession.PlaybackInfoChanged += OnPlaybackInfoChanged;
-                RefreshMediaInfo(showFlyout: true);
-                UpdatePlaybackState();
+                if (_isClosing)
+                    return;
+
+                if (!ReferenceEquals(_currentSession, selectedSession))
+                {
+                    if (_currentSession != null)
+                    {
+                        try
+                        {
+                            _currentSession.MediaPropertiesChanged -=
+                                OnMediaPropertiesChanged;
+                            _currentSession.PlaybackInfoChanged -=
+                                OnPlaybackInfoChanged;
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    _currentSession = selectedSession;
+
+                    if (_currentSession != null)
+                    {
+                        _currentSession.MediaPropertiesChanged +=
+                            OnMediaPropertiesChanged;
+                        _currentSession.PlaybackInfoChanged +=
+                            OnPlaybackInfoChanged;
+                    }
+                }
+
+                if (_currentSession != null)
+                {
+                    var session = _currentSession;
+                    await RefreshMediaInfoAsync(session, showFlyout: true);
+                }
+                else
+                {
+                    App.VisualizerInstance?.UpdateMedia(
+                        string.Empty,
+                        null,
+                        false);
+                }
             }
-            else
+            catch
             {
-                App.VisualizerInstance?.UpdateMedia(string.Empty, null, false);
+                // Media sessions can disappear while Windows is changing apps.
+                // Do not let a transient SMTC failure take down the UI thread.
+            }
+            finally
+            {
+                _sessionSyncGate.Release();
             }
         }
 
-        private void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
+        private void OnMediaPropertiesChanged(
+            GlobalSystemMediaTransportControlsSession sender,
+            MediaPropertiesChangedEventArgs args)
         {
-            Dispatcher.Invoke(() => RefreshMediaInfo(showFlyout: true));
+            if (_isClosing)
+                return;
+
+            int version =
+                Interlocked.Increment(ref _mediaRefreshVersion);
+
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(async () =>
+                {
+                    if (_isClosing)
+                        return;
+
+                    if (version != Volatile.Read(ref _mediaRefreshVersion))
+                        return;
+
+                    await RefreshMediaInfoAsync(sender, showFlyout: true);
+                }));
         }
 
-        private void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
-{
-    Dispatcher.Invoke(() =>
-    {
-        SyncSession();
-        UpdatePlaybackState();
-        SyncVisualizerVisibility();
-        // Do NOT call ShowAndTriggerTimer() here
-    });
-}
+        private void OnPlaybackInfoChanged(
+            GlobalSystemMediaTransportControlsSession sender,
+            PlaybackInfoChangedEventArgs args)
+        {
+            if (_isClosing)
+                return;
 
-        private void SyncVisualizerVisibility()
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(async () =>
+                {
+                    if (_isClosing || !ReferenceEquals(sender, _currentSession))
+                        return;
+
+                    try
+                    {
+                        var info =
+                            await Task.Run(() => sender.GetPlaybackInfo());
+
+                        if (_isClosing || !ReferenceEquals(sender, _currentSession))
+                            return;
+
+                        UpdatePlaybackState(info);
+                        SyncVisualizerVisibility(
+                            info != null &&
+                            info.PlaybackStatus ==
+                            GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing);
+                    }
+                    catch
+                    {
+                    }
+                }));
+        }
+
+        private void SyncVisualizerVisibility(bool isPlaying)
         {
             if (_currentSession == null)
             {
-                App.VisualizerInstance?.UpdateMedia(string.Empty, null, false);
+                App.VisualizerInstance?.UpdateMedia(
+                    string.Empty,
+                    null,
+                    false);
                 return;
             }
 
-            var info = _currentSession.GetPlaybackInfo();
-            bool isPlaying = info != null && info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
             var titleBlock = FindName("TrackTitle") as TextBlock;
             var albumCover = FindName("AlbumCover") as Image;
 
             App.VisualizerInstance?.UpdateMedia(
                 titleBlock?.Text ?? string.Empty,
                 albumCover?.Source as BitmapSource,
-                isPlaying
-            );
+                isPlaying);
         }
 
-        private void UpdatePlaybackState()
+        private void UpdatePlaybackState(
+            GlobalSystemMediaTransportControlsSessionPlaybackInfo? info = null)
         {
-            if (_currentSession == null) return;
+            if (_currentSession == null)
+                return;
+
             try
             {
-                var playPauseIcon = FindName("PlayPauseIcon") as System.Windows.Shapes.Path;
+                var playPauseIcon =
+                    FindName("PlayPauseIcon") as System.Windows.Shapes.Path;
                 var btnPrev = FindName("BtnPrev") as Button;
                 var btnNext = FindName("BtnNext") as Button;
 
-                var info = _currentSession.GetPlaybackInfo();
-                if (info != null)
+                info ??= _currentSession.GetPlaybackInfo();
+
+                if (info == null)
+                    return;
+
+                bool isPlaying =
+                    info.PlaybackStatus ==
+                    GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+                if (playPauseIcon != null)
                 {
-                    bool isPlaying = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-                    if (playPauseIcon != null)
-                    {
-                        playPauseIcon.Data = Geometry.Parse(isPlaying
+                    playPauseIcon.Data = Geometry.Parse(
+                        isPlaying
                             ? "M 3,3 L 6,3 L 6,15 L 3,15 Z M 10,3 L 13,3 L 13,15 L 10,15 Z"
                             : "M 4,4 L 14,9 L 4,14 Z");
-                    }
+                }
 
-                    var controls = info.Controls;
-                    if (btnPrev != null && controls != null)
-                    {
-                        btnPrev.IsEnabled = controls.IsPreviousEnabled;
-                        btnPrev.Opacity = controls.IsPreviousEnabled ? 1.0 : 0.35;
-                    }
-                    if (btnNext != null && controls != null)
-                    {
-                        btnNext.IsEnabled = controls.IsNextEnabled;
-                        btnNext.Opacity = controls.IsNextEnabled ? 1.0 : 0.35;
-                    }
+                var controls = info.Controls;
+
+                if (btnPrev != null && controls != null)
+                {
+                    btnPrev.IsEnabled = controls.IsPreviousEnabled;
+                    btnPrev.Opacity = controls.IsPreviousEnabled ? 1.0 : 0.35;
+                }
+
+                if (btnNext != null && controls != null)
+                {
+                    btnNext.IsEnabled = controls.IsNextEnabled;
+                    btnNext.Opacity = controls.IsNextEnabled ? 1.0 : 0.35;
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
 
-        private async void RefreshMediaInfo(bool showFlyout = false)
+        private async Task RefreshMediaInfoAsync(
+            GlobalSystemMediaTransportControlsSession session,
+            bool showFlyout = false)
         {
-            if (_currentSession == null) return;
+            if (_isClosing || !ReferenceEquals(session, _currentSession))
+                return;
 
             try
             {
-                var props = await _currentSession.TryGetMediaPropertiesAsync();
-                var info = _currentSession.GetPlaybackInfo();
-                bool isPlaying = info != null && info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                var props =
+                    await session.TryGetMediaPropertiesAsync();
 
-                if (props != null)
+                if (_isClosing || !ReferenceEquals(session, _currentSession))
+                    return;
+
+                if (props == null)
+                    return;
+
+                var info =
+                    await Task.Run(() => session.GetPlaybackInfo());
+
+                bool isPlaying =
+                    info != null &&
+                    info.PlaybackStatus ==
+                    GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+                string newTrackId =
+                    $"{props.Title}_{props.Artist}";
+
+                bool isNewSong =
+                    newTrackId != _lastTrackId;
+
+                _lastTrackId = newTrackId;
+
+                string title =
+                    string.IsNullOrWhiteSpace(props.Title)
+                        ? "Unknown Title"
+                        : props.Title;
+
+                string artist =
+                    string.IsNullOrWhiteSpace(props.Artist)
+                        ? "Unknown Artist"
+                        : props.Artist;
+
+                BitmapImage? img = null;
+
+                if (props.Thumbnail != null)
                 {
-                    string newTrackId = $"{props.Title}_{props.Artist}";
-                    bool isNewSong = newTrackId != _lastTrackId;
-                    _lastTrackId = newTrackId;
+                    using IRandomAccessStreamWithContentType stream =
+                        await props.Thumbnail.OpenReadAsync();
 
-                    string title = string.IsNullOrWhiteSpace(props.Title) ? "Unknown Title" : props.Title;
-                    string artist = string.IsNullOrWhiteSpace(props.Artist) ? "Unknown Artist" : props.Artist;
+                    img = new BitmapImage();
+                    img.BeginInit();
+                    img.CacheOption = BitmapCacheOption.OnLoad;
+                    img.StreamSource = stream.AsStreamForRead();
+                    img.EndInit();
+                    img.Freeze();
+                }
 
-                    BitmapImage? img = null;
-                    if (props.Thumbnail != null)
+                if (_isClosing || !ReferenceEquals(session, _currentSession))
+                    return;
+
+                // We are already on the WPF dispatcher here because this method
+                // is entered from QueueSessionSync/BeginInvoke. No synchronous
+                // Dispatcher.Invoke is necessary.
+                if (_isCardVisible && isNewSong)
+                {
+                    ExecuteMeltingTransition(() =>
                     {
-                        using IRandomAccessStreamWithContentType stream = await props.Thumbnail.OpenReadAsync();
-                        img = new BitmapImage();
-                        img.BeginInit();
-                        img.CacheOption = BitmapCacheOption.OnLoad;
-                        img.StreamSource = stream.AsStreamForRead();
-                        img.EndInit();
-                        img.Freeze();
-                    }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (_isCardVisible && isNewSong)
-                        {
-                            ExecuteMeltingTransition(() =>
-                            {
-                                ApplyTrackContent(title, artist, img, isPlaying);
-                            });
-                        }
-                        else
-                        {
-                            ApplyTrackContent(title, artist, img, isPlaying);
-                        }
-
-                        UpdatePlaybackState();
-
-                        if (showFlyout && isNewSong)
-{
-    ShowAndTriggerTimer();
-}
+                        ApplyTrackContent(
+                            title,
+                            artist,
+                            img,
+                            isPlaying);
                     });
                 }
+                else
+                {
+                    ApplyTrackContent(
+                        title,
+                        artist,
+                        img,
+                        isPlaying);
+                }
+
+                UpdatePlaybackState(info);
+
+                SyncVisualizerVisibility(isPlaying);
+
+                if (showFlyout && isNewSong)
+                    ShowAndTriggerTimer();
             }
-            catch { }
+            catch
+            {
+                // Media metadata/thumbnail calls can fail when a media app
+                // closes or changes sessions. Ignore that transient failure.
+            }
         }
 
         private void ApplyTrackContent(string title, string artist, BitmapImage? img, bool isPlaying)
@@ -671,5 +862,41 @@ namespace DanzFlyout
         }
 
         #endregion
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosing = true;
+            _hideTimer?.Stop();
+
+            if (_currentSession != null)
+            {
+                try
+                {
+                    _currentSession.MediaPropertiesChanged -=
+                        OnMediaPropertiesChanged;
+                    _currentSession.PlaybackInfoChanged -=
+                        OnPlaybackInfoChanged;
+                }
+                catch
+                {
+                }
+            }
+
+            _currentSession = null;
+            _sessionManager = null;
+
+            try
+            {
+                _sessionSyncGate.Dispose();
+            }
+            catch
+            {
+            }
+
+            base.OnClosed(e);
+        }
+
     }
 }
+
+
+

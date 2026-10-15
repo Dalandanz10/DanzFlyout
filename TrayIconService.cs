@@ -159,30 +159,42 @@ namespace DanzFlyout
         }
 
         public static void OpenSettings()
+{
+    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+    {
+        try
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            if (_settingsWindow == null || !_settingsWindow.IsLoaded)
             {
-                if (_settingsWindow == null || !_settingsWindow.IsLoaded)
+                _settingsWindow = new SettingsWindow();
+
+                _settingsWindow.Closed += (s, e) =>
                 {
-                    _settingsWindow = new SettingsWindow();
-                    _settingsWindow.Closed += (s, e) => _settingsWindow = null;
+                    _settingsWindow = null;
+                };
+
+                _settingsWindow.Show();
+            }
+            else
+            {
+                if (_settingsWindow.Visibility != Visibility.Visible)
                     _settingsWindow.Show();
-                }
-                else
-                {
-                    if (_settingsWindow.Visibility != Visibility.Visible)
-                        _settingsWindow.Show();
 
-                    if (_settingsWindow.WindowState == WindowState.Minimized)
-                        _settingsWindow.WindowState = WindowState.Normal;
-                }
+                if (_settingsWindow.WindowState == WindowState.Minimized)
+                    _settingsWindow.WindowState = WindowState.Normal;
+            }
 
-                _settingsWindow.Activate();
-                _settingsWindow.Topmost = true;
-                _settingsWindow.Topmost = false;
-                _settingsWindow.Focus();
-            });
+            _settingsWindow.Activate();
+            _settingsWindow.Topmost = true;
+            _settingsWindow.Topmost = false;
+            _settingsWindow.Focus();
         }
+        catch
+        {
+            // Prevent tray interaction errors from taking down the UI.
+        }
+    }));
+}
 
         public static void Shutdown()
         {

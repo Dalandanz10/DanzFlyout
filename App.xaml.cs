@@ -11,9 +11,10 @@ namespace DanzFlyout
     public partial class App : Application
     {
         private static Mutex? _singleInstanceMutex;
+        private static bool _ownsSingleInstanceMutex;
+
         public static MainWindow? MediaWindowInstance { get; private set; }
         public static TaskbarVisualizer? VisualizerInstance { get; private set; }
-        public static SettingsWindow? SettingsWindowInstance { get; private set; }
         public static VolumeFlyout? VolumeFlyoutInstance { get; private set; }
         public static LockKeysFlyout? LockKeysInstance { get; private set; }
 
@@ -22,7 +23,10 @@ namespace DanzFlyout
             // Catch UI thread unhandled exceptions
             DispatcherUnhandledException += (s, e) =>
             {
-                MessageBox.Show($"UI Thread Crash:\n{e.Exception.GetType().Name}: {e.Exception.Message}\n\nStack:\n{e.Exception.StackTrace}", "DanzFlyout Error");
+                MessageBox.Show(
+                    $"UI Thread Crash:\n{e.Exception.GetType().Name}: {e.Exception.Message}\n\nStack:\n{e.Exception.StackTrace}",
+                    "DanzFlyout Error");
+
                 e.Handled = true;
             };
 
@@ -30,13 +34,19 @@ namespace DanzFlyout
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var ex = e.ExceptionObject as Exception;
-                MessageBox.Show($"Background Thread Crash:\n{ex?.GetType().Name}: {ex?.Message}\n\nStack:\n{ex?.StackTrace}", "DanzFlyout Error");
+
+                MessageBox.Show(
+                    $"Background Thread Crash:\n{ex?.GetType().Name}: {ex?.Message}\n\nStack:\n{ex?.StackTrace}",
+                    "DanzFlyout Error");
             };
 
             // Catch async task unhandled exceptions
             TaskScheduler.UnobservedTaskException += (s, e) =>
             {
-                MessageBox.Show($"Task Crash:\n{e.Exception.Message}\n\nStack:\n{e.Exception.StackTrace}", "DanzFlyout Error");
+                MessageBox.Show(
+                    $"Task Crash:\n{e.Exception.Message}\n\nStack:\n{e.Exception.StackTrace}",
+                    "DanzFlyout Error");
+
                 e.SetObserved();
             };
         }
@@ -44,10 +54,20 @@ namespace DanzFlyout
         protected override void OnStartup(StartupEventArgs e)
         {
             const string mutexName = "Global\\DanzFlyout_SingleInstance_Mutex";
-            _singleInstanceMutex = new Mutex(true, mutexName, out bool createdNew);
 
+            _singleInstanceMutex = new Mutex(
+                initiallyOwned: true,
+                name: mutexName,
+                createdNew: out bool createdNew);
+
+            _ownsSingleInstanceMutex = createdNew;
+
+            // Another DanzFlyout instance is already running.
             if (!createdNew)
             {
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex = null;
+
                 Shutdown();
                 return;
             }
@@ -71,13 +91,14 @@ namespace DanzFlyout
                 VisualizerInstance = new TaskbarVisualizer();
                 VisualizerInstance.Show();
 
-                SettingsWindowInstance = new SettingsWindow();
-
                 KeyboardHookHelper.Start();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Startup Error:\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}", "DanzFlyout Startup Error");
+                MessageBox.Show(
+                    $"Startup Error:\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}",
+                    "DanzFlyout Startup Error");
+
                 Shutdown();
             }
         }
@@ -85,7 +106,26 @@ namespace DanzFlyout
         protected override void OnExit(ExitEventArgs e)
         {
             KeyboardHookHelper.Stop();
-            _singleInstanceMutex?.ReleaseMutex();
+
+            // IMPORTANT:
+            // Only the process that actually owns the mutex may release it.
+            if (_ownsSingleInstanceMutex && _singleInstanceMutex != null)
+            {
+                try
+                {
+                    _singleInstanceMutex.ReleaseMutex();
+                }
+                catch
+                {
+                    // Ignore shutdown-time mutex errors.
+                }
+
+                _ownsSingleInstanceMutex = false;
+            }
+
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex = null;
+
             base.OnExit(e);
         }
     }

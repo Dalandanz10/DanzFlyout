@@ -4,7 +4,7 @@
 [Setup]
 AppId={{A7D3F5E1-7B8C-4F21-9D64-DANZFLYOUT1000}
 AppName=DanzFlyout
-AppVersion=1.0.1
+AppVersion=1.0.2
 AppPublisher=DanzFlyout
 
 DefaultDirName={localappdata}\DanzFlyout
@@ -12,7 +12,7 @@ DefaultGroupName=DanzFlyout
 DisableProgramGroupPage=yes
 
 OutputDir=.
-OutputBaseFilename=DanzFlyout_Setup_1.0.1
+OutputBaseFilename=DanzFlyout_Setup_1.0.2
 
 Compression=lzma
 SolidCompression=yes
