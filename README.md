@@ -4,7 +4,7 @@ A lightweight, modern Windows desktop utility and taskbar audio visualizer built
 
 ---
 
-![DanzFlyout Preview](assets/preview.gif)
+![DanzFlyout Preview](Assets/preview.gif)
 
 ---
 
