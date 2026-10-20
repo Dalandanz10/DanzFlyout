@@ -485,3 +485,15 @@ $RECYCLE.BIN/
 *.exe
 
 *.rar
+
+.rmv/
+
+.rmv/
+
+.vscode/
+
+Publish_*/
+
+*.exe
+
+*.rar
