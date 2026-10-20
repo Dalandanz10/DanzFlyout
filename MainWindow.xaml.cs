@@ -26,6 +26,7 @@ namespace DanzFlyout
         private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
         private GlobalSystemMediaTransportControlsSession? _currentSession;
         private DispatcherTimer? _hideTimer;
+        private DispatcherTimer? _sessionRecoveryTimer;
         private bool _isMouseOver = false;
         private string _lastTrackId = string.Empty;
         private bool _isCardVisible = false;
@@ -162,36 +163,51 @@ namespace DanzFlyout
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+{
+    try
+    {
+        _sessionManager =
+            await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+
+        if (_sessionManager == null)
+            return;
+
+        _sessionManager.CurrentSessionChanged +=
+            (s, args) => QueueSessionSync();
+
+        _sessionManager.SessionsChanged +=
+            (s, args) => QueueSessionSync();
+
+        // Periodically recover if Windows misses a media-session event.
+        if (_sessionRecoveryTimer == null)
         {
-            try
+            _sessionRecoveryTimer = new DispatcherTimer
             {
-                _sessionManager =
-                    await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                Interval = TimeSpan.FromSeconds(15)
+            };
 
-                if (_sessionManager == null)
-                    return;
-
-                _sessionManager.CurrentSessionChanged +=
-                    (s, args) => QueueSessionSync();
-
-                _sessionManager.SessionsChanged +=
-                    (s, args) => QueueSessionSync();
-
+            _sessionRecoveryTimer.Tick += (s, args) =>
+            {
                 QueueSessionSync();
-            }
-            catch (Exception ex)
-            {
-                var titleBlock = FindName("TrackTitle") as TextBlock;
-                var artistBlock = FindName("TrackArtist") as TextBlock;
+            };
 
-                if (titleBlock != null)
-                    titleBlock.Text = "SMTC Error";
-
-                if (artistBlock != null)
-                    artistBlock.Text = ex.Message;
-            }
+            _sessionRecoveryTimer.Start();
         }
 
+        QueueSessionSync();
+    }
+    catch (Exception ex)
+    {
+        var titleBlock = FindName("TrackTitle") as TextBlock;
+        var artistBlock = FindName("TrackArtist") as TextBlock;
+
+        if (titleBlock != null)
+            titleBlock.Text = "SMTC Error";
+
+        if (artistBlock != null)
+            artistBlock.Text = ex.Message;
+    }
+}
         private void QueueSessionSync()
         {
             if (_isClosing)
@@ -866,6 +882,9 @@ namespace DanzFlyout
         {
             _isClosing = true;
             _hideTimer?.Stop();
+
+            _sessionRecoveryTimer?.Stop();
+            _sessionRecoveryTimer = null;
 
             if (_currentSession != null)
             {

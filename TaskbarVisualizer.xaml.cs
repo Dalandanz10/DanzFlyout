@@ -84,7 +84,9 @@ namespace DanzFlyout
         private double _bassPumpScale = 1.0;
         private double _currentGlowBlur = 5.0;
         private DateTime _lastFrameTime = DateTime.UtcNow;
-
+        private readonly Stopwatch _fpsStopwatch = Stopwatch.StartNew();
+        private const double TargetFrameTimeMs = 1000.0 / 60.0; // Strictly cap at 60 FPS
+        private int _silentFrames = 0;
         // Peak Cap Physics State
         private double[] _peakCapHeights = new double[64];
         private double[] _peakCapVelocities = new double[64];
@@ -249,11 +251,33 @@ namespace DanzFlyout
 
             if (isFluidWave)
             {
+                const int sampleCount = 34;
                 for (int i = 0; i < count; i++)
                 {
                     double layer = count <= 1 ? 0.0 : (double)i / (count - 1);
+
+                    // Pre-allocate point capacity so we reuse it in memory
+                    var points = new PointCollection(sampleCount);
+                    for (int s = 0; s < sampleCount; s++)
+                    {
+                        points.Add(new Point(0, 0));
+                    }
+
+                    var polySegment = new PolyLineSegment(points, true);
+                    var figure = new PathFigure
+                    {
+                        IsClosed = false,
+                        IsFilled = false,
+                        StartPoint = new Point(0, 0)
+                    };
+                    figure.Segments.Add(polySegment);
+
+                    var geometry = new PathGeometry();
+                    geometry.Figures.Add(figure);
+
                     var path = new System.Windows.Shapes.Path
                     {
+                        Data = geometry,
                         Fill = null,
                         StrokeThickness = 0.65 + ((1.0 - layer) * 0.45),
                         Opacity = 0.12 + ((1.0 - layer) * 0.88),
@@ -1738,15 +1762,20 @@ private void StopTitleColorWave()
             }
         }
 
-        private void RenderFrame(object? sender, EventArgs e)
+       private void RenderFrame(object? sender, EventArgs e)
         {
             if (!_isVisible || _isFullscreenBlocked) return;
+
+            // 60 FPS Gate: Skip render if 16.6ms hasn't elapsed yet
+            if (_fpsStopwatch.Elapsed.TotalMilliseconds < TargetFrameTimeMs)
+                return;
+
+            _fpsStopwatch.Restart();
 
             var panel = FindName("BarsPanel") as StackPanel;
             var capsCanvas = FindName("PeakCapsCanvas") as Canvas;
             var coverScale = FindName("AlbumCoverScale") as ScaleTransform;
             if (panel == null || capsCanvas == null) return;
-
             int count = panel.Children.Count;
 
             DateTime now = DateTime.UtcNow;
@@ -1760,7 +1789,41 @@ private void StopTitleColorWave()
             {
                 Array.Copy(_fftPublishedSnapshot, _fftRenderBuffer, _fftRenderBuffer.Length);
             }
+            bool isAudioSilent = true;
+            for (int k = 0; k < 64 && k < _fftRenderBuffer.Length; k++)
+            {
+                if (_fftRenderBuffer[k] > 0.0005f)
+                {
+                    isAudioSilent = false;
+                    break;
+                }
+            }
 
+            if (isAudioSilent)
+            {
+                bool allBarsAtRest = true;
+                for (int i = 0; i < _barHeight.Length; i++)
+                {
+                    if (_barHeight[i] > 0.005f)
+                    {
+                        allBarsAtRest = false;
+                        break;
+                    }
+                }
+
+                if (allBarsAtRest && _kickEnvelope < 0.01f && _snareEnvelope < 0.01f)
+                {
+                    _silentFrames++;
+                    if (_silentFrames > 10)
+                    {
+                        return; // Skips rendering math during silence
+                    }
+                }
+            }
+            else
+            {
+                _silentFrames = 0;
+            }
             ProcessSpringPhysics(dt);
 
             double sensitivity = SettingsConfig.Current.AudioSensitivity;
@@ -1907,6 +1970,10 @@ private void StopTitleColorWave()
             for (int layer = 0; layer < layerCount; layer++)
             {
                 var path = _fluidWavePaths[layer];
+                if (path.Data is not PathGeometry geometry || geometry.Figures.Count == 0) continue;
+                var figure = geometry.Figures[0];
+                if (figure.Segments.Count == 0 || figure.Segments[0] is not PolyLineSegment segment) continue;
+
                 double layerT = layerCount <= 1 ? 0.0 : (double)layer / (layerCount - 1);
                 double centerWeight = 1.0 - Math.Abs((layerT * 2.0) - 1.0);
 
@@ -1919,14 +1986,9 @@ private void StopTitleColorWave()
                 double phase = _fluidWavePhase + (layer * 0.17);
                 double frequency = 1.05 + (centerWeight * 0.75) + (layerT * 0.12);
 
-                var figure = new PathFigure
-                {
-                    IsClosed = false,
-                    IsFilled = false,
-                    StartPoint = new Point(0, centerY)
-                };
+                figure.StartPoint = new Point(0, centerY);
+                var points = segment.Points;
 
-               var points = new PointCollection();
                 for (int sample = 0; sample < sampleCount; sample++)
                 {
                     double t = (double)sample / (sampleCount - 1);
@@ -1937,7 +1999,6 @@ private void StopTitleColorWave()
                     double normalized = Clamp01(spectral / Math.Max(_visualPeakRef, 1e-5f));
                     double smoothEnergy = 0.24 + (normalized * 1.55);
 
-                    // A broad sine plus a finer harmonic gives the layered waveform shape
                     double primary = Math.Sin((t * Math.PI * 2.0 * frequency) + phase);
                     double harmonic = Math.Sin((t * Math.PI * 2.0 * (frequency * 2.35)) - phase * 0.72);
                     double envelope = Math.Sin(Math.PI * t);
@@ -1945,7 +2006,6 @@ private void StopTitleColorWave()
                     double rawYOffset = (primary * 0.72 + harmonic * 0.28)
                                        * amplitude * smoothEnergy * (0.25 + (0.75 * envelope));
 
-                    // Soft compression: smooth out excess height so peaks stay within taskbar bounds
                     double maxRoom = Math.Max(2.0, centerY - 2.0);
                     double threshold = maxRoom * 0.65;
                     double absVal = Math.Abs(rawYOffset);
@@ -1963,11 +2023,12 @@ private void StopTitleColorWave()
                         yOffset = Math.Sign(rawYOffset) * compressed;
                     }
 
-                    points.Add(new Point(x, centerY - yOffset));
+                    // Directly overwrite existing point in-place (no new allocations)
+                    if (sample < points.Count)
+                    {
+                        points[sample] = new Point(x, centerY - yOffset);
+                    }
                 }
-
-                figure.Segments.Add(new PolyLineSegment(points, true));
-                path.Data = new PathGeometry(new[] { figure });
 
                 double targetOpacity = 0.16 + (centerWeight * 0.84);
                 path.Opacity = targetOpacity;
