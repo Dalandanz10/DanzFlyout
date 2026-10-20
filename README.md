@@ -22,7 +22,7 @@ A lightweight, modern Windows desktop utility and taskbar audio visualizer built
 
 Download the pre-compiled installer from the **[Releases](https://github.com/Dalandanz10/DanzFlyout/releases)** section:
 
-1. Download `DanzFlyout_Setup_1.0.1.exe`.
+1. Download `DanzFlyout_Setup_1.0.3.exe`.
 2. Run the setup wizard to install the application.
 3. DanzFlyout will run in your Windows system tray. Right-click the tray icon to open Settings or adjust placement.
 
