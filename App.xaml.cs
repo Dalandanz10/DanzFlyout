@@ -50,7 +50,26 @@ namespace DanzFlyout
                 e.SetObserved();
             };
         }
+        
+        public static void SetMediaFlyoutEnabled(bool enabled)
+    {
+        if (enabled)
+        {
+            if (MediaWindowInstance == null)
+            {
+                MediaWindowInstance = new MainWindow();
+            }
 
+            if (!MediaWindowInstance.IsVisible)
+            {
+                MediaWindowInstance.Show();
+            }
+        }
+        else
+        {
+            MediaWindowInstance?.Hide();
+        }
+    }
         protected override void OnStartup(StartupEventArgs e)
         {
             const string mutexName = "Global\\DanzFlyout_SingleInstance_Mutex";

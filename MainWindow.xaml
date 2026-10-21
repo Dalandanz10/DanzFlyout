@@ -41,12 +41,14 @@
             <TranslateTransform x:Name="CardTranslate" Y="12"/>
         </Grid.RenderTransform>
 
+        
         <!-- Main Card -->
         <Border x:Name="CardBorder"
                 CornerRadius="18"
                 ClipToBounds="True"
                 BorderThickness="1">
 
+            <!-- Glass border -->
             <Border.BorderBrush>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#38FFFFFF" Offset="0"/>
@@ -55,8 +57,13 @@
                 </LinearGradientBrush>
             </Border.BorderBrush>
 
+            <!-- Lighter, translucent glass background -->
             <Border.Background>
-                <SolidColorBrush Color="#E6101116"/>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#A51B202A" Offset="0"/>
+                    <GradientStop Color="#95101116" Offset="0.5"/>
+                    <GradientStop Color="#A5101116" Offset="1"/>
+                </LinearGradientBrush>
             </Border.Background>
 
             <Grid>
@@ -66,6 +73,21 @@
                         CornerRadius="18"
                         Opacity="0"
                         Background="#257C8CFF"/>
+
+                <!-- Subtle frosted-glass highlight -->
+                <Border CornerRadius="18"
+                        IsHitTestVisible="False"
+                        BorderThickness="1"
+                        BorderBrush="#12FFFFFF">
+
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#18FFFFFF" Offset="0"/>
+                            <GradientStop Color="#06FFFFFF" Offset="0.45"/>
+                            <GradientStop Color="#00000000" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
 
                 <!-- Content -->
                 <Grid x:Name="MeltContainer"
@@ -113,7 +135,9 @@
                                RenderOptions.BitmapScalingMode="HighQuality"
                                RenderTransformOrigin="0.5,0.5">
                             <Image.RenderTransform>
-                                <ScaleTransform x:Name="AlbumCoverTrackScale" ScaleX="1" ScaleY="1"/>
+                                <ScaleTransform x:Name="AlbumCoverTrackScale"
+                                                ScaleX="1"
+                                                ScaleY="1"/>
                             </Image.RenderTransform>
                         </Image>
                     </Border>
@@ -142,7 +166,9 @@
                                        Foreground="#FFFFFF"
                                        TextTrimming="CharacterEllipsis">
                                 <TextBlock.RenderTransform>
-                                    <TranslateTransform x:Name="TitleTrackTranslate" X="0" Y="0"/>
+                                    <TranslateTransform x:Name="TitleTrackTranslate"
+                                                        X="0"
+                                                        Y="0"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Canvas>
@@ -161,7 +187,9 @@
                                        FontFamily="Segoe UI Variable Text, Segoe UI"
                                        Foreground="#9FA4B2">
                                 <TextBlock.RenderTransform>
-                                    <TranslateTransform x:Name="ArtistTranslate" X="0" Y="0"/>
+                                    <TranslateTransform x:Name="ArtistTranslate"
+                                                        X="0"
+                                                        Y="0"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Canvas>

@@ -169,46 +169,56 @@ namespace DanzFlyout
             ShowStatus("Caps Lock", true, force);
         }
 
+         
         private void AnimateToggle(bool isOn)
         {
             var track = FindName("ToggleTrack") as Border;
             var thumb = FindName("ToggleThumb") as Border;
             var thumbTranslate = FindName("ThumbTranslate") as TranslateTransform;
 
-            if (track == null || thumb == null || thumbTranslate == null) return;
+            if (track == null || thumb == null || thumbTranslate == null)
+                return;
 
-            // Travel distance inside the 52px track
-            double targetX = isOn ? 24.0 : 0.0;
+            // Stop previous animations so old colors cannot linger.
+            track.Background?.BeginAnimation(SolidColorBrush.ColorProperty, null);
+            track.BorderBrush?.BeginAnimation(SolidColorBrush.ColorProperty, null);
+            thumb.Background?.BeginAnimation(SolidColorBrush.ColorProperty, null);
+            thumb.BorderBrush?.BeginAnimation(SolidColorBrush.ColorProperty, null);
 
-            var slideAnim = new DoubleAnimation(targetX, TimeSpan.FromMilliseconds(220))
+            // Keep the original slide animation.
+            var slideAnim = new DoubleAnimation(
+                isOn ? 24.0 : 0.0,
+                TimeSpan.FromMilliseconds(220))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
+
             thumbTranslate.BeginAnimation(TranslateTransform.XProperty, slideAnim);
 
-            Color trackTargetColor = isOn ? Color.FromArgb(120, 30, 160, 220) : Color.FromArgb(35, 255, 255, 255);
-            Color trackBorderColor = isOn ? Color.FromArgb(190, 96, 205, 255) : Color.FromArgb(50, 255, 255, 255);
+            // ON = frosted silver; OFF = subtle transparent glass.
+            // ON = bright frosted silver; OFF = dark translucent glass.
+            var trackFill = new SolidColorBrush(
+                isOn ? Color.FromArgb(190, 215, 217, 223)
+                    : Color.FromArgb(35, 255, 255, 255));
 
-            Color thumbTargetColor = isOn ? Color.FromArgb(245, 255, 255, 255) : Color.FromArgb(110, 255, 255, 255);
-            Color thumbBorderColor = isOn ? Color.FromArgb(255, 255, 255, 255) : Color.FromArgb(150, 255, 255, 255);
+            var trackBorder = new SolidColorBrush(
+                isOn ? Color.FromArgb(235, 255, 255, 255)
+                    : Color.FromArgb(65, 255, 255, 255));
 
-            var trackAnim = new ColorAnimation(trackTargetColor, TimeSpan.FromMilliseconds(200));
-            var trackBorderAnim = new ColorAnimation(trackBorderColor, TimeSpan.FromMilliseconds(200));
-            var thumbAnim = new ColorAnimation(thumbTargetColor, TimeSpan.FromMilliseconds(200));
-            var thumbBorderAnim = new ColorAnimation(thumbBorderColor, TimeSpan.FromMilliseconds(200));
+            var thumbFill = new SolidColorBrush(
+                isOn ? Color.FromArgb(255, 255, 255, 255)
+                    : Color.FromArgb(110, 255, 255, 255));
 
-            track.Background = new SolidColorBrush(isOn ? Color.FromArgb(35, 255, 255, 255) : Color.FromArgb(120, 30, 160, 220));
-            track.Background.BeginAnimation(SolidColorBrush.ColorProperty, trackAnim);
+            var thumbBorder = new SolidColorBrush(
+                isOn ? Color.FromArgb(255, 255, 255, 255)
+                    : Color.FromArgb(150, 255, 255, 255));
 
-            track.BorderBrush = new SolidColorBrush(isOn ? Color.FromArgb(50, 255, 255, 255) : Color.FromArgb(190, 96, 205, 255));
-            track.BorderBrush.BeginAnimation(SolidColorBrush.ColorProperty, trackBorderAnim);
-
-            thumb.Background = new SolidColorBrush(isOn ? Color.FromArgb(110, 255, 255, 255) : Color.FromArgb(245, 255, 255, 255));
-            thumb.Background.BeginAnimation(SolidColorBrush.ColorProperty, thumbAnim);
-
-            thumb.BorderBrush = new SolidColorBrush(isOn ? Color.FromArgb(150, 255, 255, 255) : Color.FromArgb(255, 255, 255, 255));
-            thumb.BorderBrush.BeginAnimation(SolidColorBrush.ColorProperty, thumbBorderAnim);
+            track.Background = trackFill;
+            track.BorderBrush = trackBorder;
+            thumb.Background = thumbFill;
+            thumb.BorderBrush = thumbBorder;
         }
+
 
         private void AnimateIn()
         {

@@ -11,6 +11,20 @@
         ResizeMode="NoResize">
 
     <Window.Resources>
+        <!-- DanzFlyout Settings Theme -->
+<SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F00C0E14"/>
+<SolidColorBrush x:Key="PanelBackgroundBrush" Color="#141820"/>
+<SolidColorBrush x:Key="CardBackgroundBrush" Color="#101820"/>
+<SolidColorBrush x:Key="CardBorderBrush" Color="#20FFFFFF"/>
+
+<SolidColorBrush x:Key="AccentBrush" Color="#7C8CFF"/>
+<SolidColorBrush x:Key="AccentHoverBrush" Color="#A5B0FF"/>
+<SolidColorBrush x:Key="AccentMutedBrush" Color="#267C8CFF"/>
+
+<SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="SecondaryTextBrush" Color="#AAB1C2"/>
+<SolidColorBrush x:Key="MutedTextBrush" Color="#78FFFFFF"/>
+<SolidColorBrush x:Key="SuccessBrush" Color="#5EEAD4"/>
         <!-- ========= Thin modern scrollbars ========= -->
         <Style x:Key="ScrollTrackBtn" TargetType="RepeatButton">
             <Setter Property="Focusable" Value="False"/>
@@ -243,8 +257,8 @@
 
         <!-- ========= Text / card styles ========= -->
         <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="#0CFFFFFF"/>
-            <Setter Property="BorderBrush" Value="#12FFFFFF"/>
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="18"/>
@@ -253,18 +267,20 @@
         <Style x:Key="PageTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="21"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
         </Style>
+
         <Style x:Key="PageSub" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#78FFFFFF"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}"/>
             <Setter Property="Margin" Value="0,3,0,16"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
+
         <Style x:Key="SectionLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#7C8CFF"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Margin" Value="2,12,0,8"/>
         </Style>
         <Style x:Key="RowTitle" TargetType="TextBlock">
@@ -437,14 +453,14 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="#F00C0E14" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="18">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="34" Color="#000000" Direction="270" Opacity="0.55" ShadowDepth="10"/>
-        </Border.Effect>
+    <Border Background="#F00C0E14"
+        BorderBrush="#18FFFFFF"
+        BorderThickness="1"
+        CornerRadius="18"
+        ClipToBounds="True">
 
         <Grid>
-            <Border Height="2" VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="#7C8CFF" Opacity="0.9" CornerRadius="1" Panel.ZIndex="5"/>
-            <Grid Margin="0,2,0,0">
+            <Grid Margin="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="154"/>
                     <ColumnDefinition Width="*"/>
@@ -553,10 +569,10 @@
                     <!-- TOP BAR -->
                     <Grid Grid.Row="0" Margin="0,0,0,14" Background="Transparent" MouseLeftButtonDown="Header_MouseLeftButtonDown">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="DanzFlyout" FontSize="22" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                            <Border Background="#167C8CFF" BorderBrush="#307C8CFF" BorderThickness="1" CornerRadius="6" Padding="7,3" Margin="10,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="SETTINGS  •  v2.4" FontSize="9.5" FontWeight="SemiBold" Foreground="#7C8CFF"/>
-                            </Border>
+                            <TextBlock Text="DanzFlyout"
+                                    FontSize="22"
+                                    FontWeight="SemiBold"
+                                    Foreground="#FFFFFF"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -569,119 +585,176 @@
                         </StackPanel>
                     </Grid>
 
+                    
                     <!-- BODY VIEWS -->
-                    <Grid Grid.Row="1">
-                    <ScrollViewer x:Name="ViewDashboard" VerticalScrollBarVisibility="Auto">
+                    <!-- DASHBOARD -->
+                    <ScrollViewer x:Name="ViewDashboard" Grid.Row="1" Visibility="Visible" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Dashboard" Style="{StaticResource PageTitle}"/>
-                            <TextBlock Text="Status and shortcuts at a glance." Style="{StaticResource PageSub}"/>
-                            <Border Margin="0,0,0,6" CornerRadius="14" BorderThickness="1" BorderBrush="#26FFFFFF" Padding="22,18">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#2E7C8CFF" Offset="0"/>
-                                        <GradientStop Color="#141A1D2A" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <StackPanel>
-                                    <TextBlock Text="DanzFlyout is running" FontSize="17" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                    <TextBlock x:Name="DashSummary" Text="" FontSize="12" Foreground="#9AA3BD" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                            <TextBlock Text="A quick overview of your DanzFlyout features." Style="{StaticResource PageSub}"/>
 
-                            <TextBlock Text="STATUS" Style="{StaticResource SectionLabel}"/>
-                            <UniformGrid Columns="4" Margin="-5,0">
-                                <Border Style="{StaticResource Card}" Margin="5" Padding="16,14">
-                                    <StackPanel>
-                                        <TextBlock Text="Taskbar Visualizer" Style="{StaticResource RowDesc}" Margin="0"/>
-                                        <TextBlock x:Name="StatVis" Text="-" FontSize="15" FontWeight="SemiBold" Foreground="#78FFFFFF" Margin="0,6,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource Card}" Margin="5" Padding="16,14">
-                                    <StackPanel>
-                                        <TextBlock Text="Volume Flyout" Style="{StaticResource RowDesc}" Margin="0"/>
-                                        <TextBlock x:Name="StatVol" Text="-" FontSize="15" FontWeight="SemiBold" Foreground="#78FFFFFF" Margin="0,6,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource Card}" Margin="5" Padding="16,14">
-                                    <StackPanel>
-                                        <TextBlock Text="Lock Keys Flyout" Style="{StaticResource RowDesc}" Margin="0"/>
-                                        <TextBlock x:Name="StatLock" Text="-" FontSize="15" FontWeight="SemiBold" Foreground="#78FFFFFF" Margin="0,6,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource Card}" Margin="5" Padding="16,14">
-                                    <StackPanel>
-                                        <TextBlock Text="Start with Windows" Style="{StaticResource RowDesc}" Margin="0"/>
-                                        <TextBlock x:Name="StatAuto" Text="-" FontSize="15" FontWeight="SemiBold" Foreground="#78FFFFFF" Margin="0,6,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                            </UniformGrid>
-
-                            <TextBlock Text="TEST FLYOUTS" Style="{StaticResource SectionLabel}"/>
-                            <WrapPanel>
-                                <Button Content="Media Flyout" Click="TestMedia_Click" Padding="16,8" Margin="0,0,8,8" Background="#257C8CFF" BorderBrush="#407C8CFF" BorderThickness="1" Foreground="#D2D9FF" FontWeight="SemiBold" FontSize="12"/>
-                                <Button Content="Volume Flyout" Click="TestVolume_Click" Padding="16,8" Margin="0,0,8,8" Background="#257C8CFF" BorderBrush="#407C8CFF" BorderThickness="1" Foreground="#D2D9FF" FontWeight="SemiBold" FontSize="12"/>
-                                <Button Content="Lock Keys Flyout" Click="TestLock_Click" Padding="16,8" Margin="0,0,8,8" Background="#257C8CFF" BorderBrush="#407C8CFF" BorderThickness="1" Foreground="#D2D9FF" FontWeight="SemiBold" FontSize="12"/>
-                            </WrapPanel>
-
-                            <TextBlock Text="QUICK ACCESS" Style="{StaticResource SectionLabel}"/>
-                            <UniformGrid Columns="2" Margin="-5,0">
-                                <Button Click="NavVisualizer_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="Taskbar Visualizer" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Style, layout, response &amp; colors" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Click="NavMedia_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="Media Flyout" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Monitor, placement &amp; duration" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Click="NavVolume_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="Volume Flyout" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Turn on/off, monitor &amp; placement" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Click="NavLock_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="Lock Keys Flyout" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Caps / Num lock popup settings" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Click="NavMixer_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="Mixer" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Per-application volume" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Click="NavSystem_Click" Style="{StaticResource CardBtn}" Height="76">
-                                    <StackPanel>
-                                        <TextBlock Text="System" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Startup &amp; Windows integration" Style="{StaticResource RowDesc}"/>
-                                    </StackPanel>
-                                </Button>
-                            </UniformGrid>
-                        </StackPanel>
-                    </ScrollViewer>
-                    <ScrollViewer x:Name="ViewVisualizer" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,0,12,0">
-                            <TextBlock Text="Taskbar Visualizer" Style="{StaticResource PageTitle}"/>
-                            <TextBlock Text="The mini album art, track title and audio bars on your taskbar." Style="{StaticResource PageSub}"/>
-                            <TextBlock Text="GENERAL" Style="{StaticResource SectionLabel}"/>
+                            <TextBlock Text="FEATURE STATUS" Style="{StaticResource SectionLabel}"/>
                             <Border Style="{StaticResource Card}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                                        <TextBlock Text="Enable Taskbar Visualizer" Style="{StaticResource RowTitle}"/>
-                                        <TextBlock Text="Show the mini album artwork, title and audio visualizer in the taskbar." Style="{StaticResource RowDesc}"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Taskbar Visualizer" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Mini album art, track title and audio bars." Style="{StaticResource RowDesc}"/>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Click="ToggleVisualizer_Click" Style="{StaticResource HeaderBtn}">
-                                        <Border x:Name="ToggleVisPill" CornerRadius="11" Width="42" Height="22" Background="#18FFFFFF" BorderBrush="#32FFFFFF" BorderThickness="1">
-                                            <Border CornerRadius="7" Width="14" Height="14" Background="#FFFFFF" HorizontalAlignment="Left" Margin="3,0"/>
+                                    <TextBlock x:Name="StatVis" Grid.Column="1" Text="Enabled" VerticalAlignment="Center" Foreground="#5EEAD4" FontSize="12" FontWeight="SemiBold"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Volume Flyout" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Custom volume overlay and controls." Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StatVol" Grid.Column="1" Text="Enabled" VerticalAlignment="Center" Foreground="#5EEAD4" FontSize="12" FontWeight="SemiBold"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Lock Keys Flyout" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Caps Lock, Num Lock and Scroll Lock status." Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StatLock" Grid.Column="1" Text="Enabled" VerticalAlignment="Center" Foreground="#5EEAD4" FontSize="12" FontWeight="SemiBold"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Start with Windows" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Launch DanzFlyout automatically when you sign in." Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StatAuto" Grid.Column="1" Text="Enabled" VerticalAlignment="Center" Foreground="#5EEAD4" FontSize="12" FontWeight="SemiBold"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <TextBlock x:Name="DashSummary" Text="4 of 4 features enabled" Foreground="#AAB1C2" FontSize="12.5"/>
+                            </Border>
+
+                            <TextBlock Text="QUICK TESTS" Style="{StaticResource SectionLabel}"/>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                    <Button Click="TestMedia_Click" Style="{StaticResource HeaderBtn}" Margin="0,0,8,0" Padding="12,8">
+                                        <TextBlock Text="Test Media" Foreground="#FFFFFF"/>
+                                    </Button>
+                                    <Button Click="TestVolume_Click" Style="{StaticResource HeaderBtn}" Margin="0,0,8,0" Padding="12,8">
+                                        <TextBlock Text="Test Volume" Foreground="#FFFFFF"/>
+                                    </Button>
+                                    <Button Click="TestLock_Click" Style="{StaticResource HeaderBtn}" Padding="12,8">
+                                        <TextBlock Text="Test Lock Keys" Foreground="#FFFFFF"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="ViewVisualizer" Grid.Row="1"
+                                Visibility="Collapsed"
+                                VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,12,0">
+
+                            <TextBlock Text="Taskbar Visualizer"
+                                    Style="{StaticResource PageTitle}"/>
+
+                            <TextBlock Text="The mini album art, track title and audio bars on your taskbar."
+                                    Style="{StaticResource PageSub}"/>
+
+                            <TextBlock Text="GENERAL"
+                                    Style="{StaticResource SectionLabel}"/>
+
+                            <!-- Enable Taskbar Visualizer -->
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,16,0">
+                                        <TextBlock Text="Enable Taskbar Visualizer"
+                                                Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Show the mini album artwork, title and audio visualizer in the taskbar."
+                                                Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Click="ToggleVisualizer_Click"
+                                            Style="{StaticResource HeaderBtn}">
+                                        <Border x:Name="ToggleVisPill"
+                                                CornerRadius="11"
+                                                Width="42"
+                                                Height="22"
+                                                Background="#18FFFFFF"
+                                                BorderBrush="#32FFFFFF"
+                                                BorderThickness="1">
+                                            <Border x:Name="ToggleVisKnob"
+                                                    CornerRadius="7"
+                                                    Width="14"
+                                                    Height="14"
+                                                    Background="#FFFFFF"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="3,0"/>
+                                        </Border>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Show Taskbar Media Controls -->
+                            <Border Style="{StaticResource Card}"
+                                    Margin="0,8,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,16,0">
+                                        <TextBlock Text="Show Taskbar Media Controls"
+                                                Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Show Previous, Play/Pause and Next buttons beside the album cover."
+                                                Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Click="ToggleTaskbarMediaControls_Click"
+                                            Style="{StaticResource HeaderBtn}">
+                                        <Border x:Name="ToggleTaskbarMediaControlsPill"
+                                                CornerRadius="11"
+                                                Width="42"
+                                                Height="22"
+                                                Background="#18FFFFFF"
+                                                BorderBrush="#32FFFFFF"
+                                                BorderThickness="1">
+                                            <Border x:Name="ToggleTaskbarMediaControlsKnob"
+                                                    CornerRadius="7"
+                                                    Width="14"
+                                                    Height="14"
+                                                    Background="#FFFFFF"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="3,0"/>
                                         </Border>
                                     </Button>
                                 </Grid>
@@ -838,7 +911,7 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
-                    <ScrollViewer x:Name="ViewMedia" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="ViewMedia" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Media Flyout" Style="{StaticResource PageTitle}"/>
                             <TextBlock Text="The pop-up that appears when the track changes." Style="{StaticResource PageSub}"/>
@@ -896,9 +969,46 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+                            
+                            <Border Style="{StaticResource Card}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,16,0">
+                                        <TextBlock Text="Enable Media Flyout"
+                                                Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Show DanzFlyout's media popup when the track changes."
+                                                Style="{StaticResource RowDesc}"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Click="ToggleMediaFlyout_Click"
+                                            Style="{StaticResource HeaderBtn}">
+                                        <Border x:Name="ToggleMediaPill"
+                                                CornerRadius="11"
+                                                Width="42"
+                                                Height="22"
+                                                Background="#18FFFFFF"
+                                                BorderBrush="#32FFFFFF"
+                                                BorderThickness="1">
+                                            <Border CornerRadius="7"
+                                                    Width="14"
+                                                    Height="14"
+                                                    Background="#FFFFFF"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="3,0"/>
+                                        </Border>
+                                    </Button>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
-                    <ScrollViewer x:Name="ViewVolume" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="ViewVolume" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Volume Flyout" Style="{StaticResource PageTitle}"/>
                             <TextBlock Text="The glass volume pill shown when you change the volume." Style="{StaticResource PageSub}"/>
@@ -949,7 +1059,7 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
-                    <ScrollViewer x:Name="ViewLock" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="ViewLock" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Lock Keys Flyout" Style="{StaticResource PageTitle}"/>
                             <TextBlock Text="The Caps Lock / Num Lock notification." Style="{StaticResource PageSub}"/>
@@ -1000,7 +1110,7 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
-                    <ScrollViewer x:Name="ViewMixer" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="ViewMixer" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="Application Volume Mixer" Style="{StaticResource PageTitle}"/>
                             <TextBlock Text="Per-application volume control." Style="{StaticResource PageSub}"/>
@@ -1009,7 +1119,7 @@
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
-                    <ScrollViewer x:Name="ViewSystem" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer x:Name="ViewSystem" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Text="System" Style="{StaticResource PageTitle}"/>
                             <TextBlock Text="Startup and Windows integration." Style="{StaticResource PageSub}"/>
@@ -1054,6 +1164,5 @@
                     </Grid>
                 </Grid>
             </Grid>
-        </Grid>
     </Border>
 </Window>

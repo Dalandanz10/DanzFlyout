@@ -407,6 +407,27 @@ namespace DanzFlyout
                 albumCover?.Source as BitmapSource,
                 isPlaying);
         }
+        
+        public async Task TaskbarSkipPreviousAsync()
+        {
+            var session = _currentSession;
+            if (session != null)
+                await session.TrySkipPreviousAsync();
+        }
+
+        public async Task TaskbarTogglePlayPauseAsync()
+        {
+            var session = _currentSession;
+            if (session != null)
+                await session.TryTogglePlayPauseAsync();
+        }
+
+        public async Task TaskbarSkipNextAsync()
+        {
+            var session = _currentSession;
+            if (session != null)
+                await session.TrySkipNextAsync();
+        }
 
         private void UpdatePlaybackState(
             GlobalSystemMediaTransportControlsSessionPlaybackInfo? info = null)
@@ -556,8 +577,9 @@ namespace DanzFlyout
             }
         }
 
-        private void ApplyTrackContent(string title, string artist, BitmapImage? img, bool isPlaying)
-        {
+        
+    private void ApplyTrackContent(string title, string artist, BitmapImage? img, bool isPlaying)
+    {
             var titleBlock = FindName("TrackTitle") as TextBlock;
             var artistBlock = FindName("TrackArtist") as TextBlock;
             var titleCanvas = FindName("TitleCanvas") as Canvas;
@@ -567,22 +589,31 @@ namespace DanzFlyout
             if (titleBlock != null) titleBlock.Text = title;
             if (artistBlock != null) artistBlock.Text = artist;
 
-            if (titleBlock != null && titleCanvas != null) SetupMarquee(titleBlock, titleCanvas);
-            if (artistBlock != null && artistCanvas != null) SetupMarquee(artistBlock, artistCanvas);
+            if (titleBlock != null && titleCanvas != null)
+                SetupMarquee(titleBlock, titleCanvas);
+
+            if (artistBlock != null && artistCanvas != null)
+                SetupMarquee(artistBlock, artistCanvas);
 
             if (img != null && albumCover != null)
             {
                 albumCover.Source = img;
-                if (UseAdaptiveAlbumColor) ApplyAdaptiveGlass(img);
+
+                if (UseAdaptiveAlbumColor)
+                    ApplyAdaptiveGlass(img);
+
                 App.VisualizerInstance?.UpdateMedia(title, img, isPlaying);
             }
             else
-            {
-                if (albumCover != null) albumCover.Source = null;
-                ResetGlassColor();
-                App.VisualizerInstance?.UpdateMedia(title, null, isPlaying);
-            }
+{
+            if (albumCover != null)
+                albumCover.Source = null;
+
+            ResetGlassColor();
+            App.VisualizerInstance?.UpdateMedia(title, null, isPlaying);
         }
+        }
+
 
         private void ExecuteMeltingTransition(Action onMidpointSwap)
         {
@@ -804,17 +835,26 @@ namespace DanzFlyout
         #region Animations & Mouse Events
 
        public void ShowAndTriggerTimer()
-        {
-            if (FullscreenHelper.IsGameOrFullscreenActive())
-            {
-                return; // Do not show media flyout while in-game or fullscreen
-            }
+{
+    // Do not show the Media Flyout when disabled.
+    if (!SettingsConfig.Current.EnableMediaFlyout)
+    {
+        _hideTimer?.Stop();
+        AnimateOut();
+        return;
+    }
 
-            AnimateIn();
-            UpdateDurationFromSettings();
-            _hideTimer?.Stop();
-            _hideTimer?.Start();
-        }
+    // Do not show the Media Flyout during games or fullscreen apps.
+    if (FullscreenHelper.IsGameOrFullscreenActive())
+    {
+        return;
+    }
+
+    AnimateIn();
+    UpdateDurationFromSettings();
+    _hideTimer?.Stop();
+    _hideTimer?.Start();
+}
         private void AnimateIn()
 {
     _isCardVisible = true;

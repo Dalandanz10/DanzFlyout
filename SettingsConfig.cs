@@ -16,6 +16,7 @@ namespace DanzFlyout
         public static SettingsConfig Current { get; set; } = new SettingsConfig();
 
         public bool EnableTaskbarVisualizer { get; set; } = true;
+        public bool ShowTaskbarMediaControls { get; set; } = true;
         public string VisualizerStyle { get; set; } = "CenterBars";
         public string VisualizerMode { get; set; } = "FluentWave";
         public int VisualizerMonitorIndex { get; set; } = 0;

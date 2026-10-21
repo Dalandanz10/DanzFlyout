@@ -206,7 +206,7 @@ namespace DanzFlyout
             Loaded += TaskbarVisualizer_Loaded;
             Closed += (s, e) => StopAudio();
         }
-
+        
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -547,7 +547,9 @@ namespace DanzFlyout
         {
             ApplySettingsLayout();
             StartAudio();
-
+            ApplySettingsLayout();
+            RefreshTaskbarMediaControlsVisibility();
+            StartAudio();
             _lastFrameTime = DateTime.UtcNow;
             _renderTimer = new DispatcherTimer(DispatcherPriority.Render)
             {
@@ -941,6 +943,20 @@ private void StopTitleColorWave()
         Opacity = 0.88
     };
 }
+        
+        public void RefreshTaskbarMediaControlsVisibility()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (FindName("TaskbarMediaControls") is FrameworkElement controls)
+                {
+                    controls.Visibility =
+                        SettingsConfig.Current.ShowTaskbarMediaControls
+                            ? Visibility.Visible
+                            : Visibility.Hidden;
+                }
+            });
+        }
 
         public void UpdateMedia(string title, BitmapSource? cover, bool isPlaying)
         {
@@ -1169,6 +1185,24 @@ private void StopTitleColorWave()
             if (capture != null)
                 DisposeCaptureInBackground(capture);
         }
+        
+        private async void TaskbarPreviousButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.MediaWindowInstance is MainWindow mainWindow)
+                await mainWindow.TaskbarSkipPreviousAsync();
+        }
+
+        private async void TaskbarPlayPauseButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.MediaWindowInstance is MainWindow mainWindow)
+                await mainWindow.TaskbarTogglePlayPauseAsync();
+        }
+
+        private async void TaskbarNextButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.MediaWindowInstance is MainWindow mainWindow)
+                await mainWindow.TaskbarSkipNextAsync();
+        }
 
         private async Task<bool> SafeInitAudioAsync(bool force = false)
         {
@@ -1209,6 +1243,54 @@ private void StopTitleColorWave()
                 _audioInitLock.Release();
             }
         }
+        
+        public void SetTaskbarMediaControlsState(
+            bool isPlaying,
+            bool canPrev,
+            bool canNext)
+        {
+            var playPauseIcon =
+                FindName("TaskbarPlayPauseIcon") as System.Windows.Shapes.Path;
+
+            var prevButton =
+            FindName("TaskbarPreviousButton") as System.Windows.Controls.Button;
+
+            var playPauseButton =
+                FindName("TaskbarPlayPauseButton") as System.Windows.Controls.Button;
+
+            var nextButton =
+                FindName("TaskbarNextButton") as System.Windows.Controls.Button;
+
+                // Update the play/pause icon.
+                if (playPauseIcon != null)
+                {
+                    playPauseIcon.Data = Geometry.Parse(
+                        isPlaying
+                            ? "M 3,3 L 6,3 L 6,15 L 3,15 Z M 10,3 L 13,3 L 13,15 L 10,15 Z"
+                            : "M 4,4 L 14,9 L 4,14 Z");
+                }
+
+                // Update Previous button availability.
+                if (prevButton != null)
+                {
+                    prevButton.IsEnabled = canPrev;
+                    prevButton.Opacity = canPrev ? 1.0 : 0.35;
+                }
+
+                // Update Play/Pause button availability.
+                if (playPauseButton != null)
+                {
+                    playPauseButton.IsEnabled = true;
+                    playPauseButton.Opacity = 1.0;
+                }
+
+                // Update Next button availability.
+                if (nextButton != null)
+                {
+                    nextButton.IsEnabled = canNext;
+                    nextButton.Opacity = canNext ? 1.0 : 0.35;
+                }
+            }
 
         // Runs on a pool thread. It may block; the caller enforces the timeout.
         private bool ConnectCore(int gen, bool force)
@@ -1890,9 +1972,9 @@ private void StopTitleColorWave()
                     double currOpacity = _barOpacities[i];
 
                     if (targetOpacity > currOpacity)
-                        currOpacity = 1.0;
+                        currOpacity = Math.Min(targetOpacity, currOpacity + 0.15);
                     else
-                        currOpacity = Math.Max(0.0, currOpacity - 0.25);
+                        currOpacity = Math.Max(targetOpacity, currOpacity - 0.25);
 
                     _barOpacities[i] = currOpacity;
                     bar.Opacity = currOpacity;

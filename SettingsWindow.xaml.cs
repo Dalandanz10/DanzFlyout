@@ -37,6 +37,12 @@ namespace DanzFlyout
             try
             {
                 if (ToggleVisPill != null) UpdateToggleVisual(ToggleVisPill, SettingsConfig.Current.EnableTaskbarVisualizer);
+                if (ToggleTaskbarMediaControlsPill != null)
+                {
+                    UpdateToggleVisual(
+                        ToggleTaskbarMediaControlsPill,
+                        SettingsConfig.Current.ShowTaskbarMediaControls);
+                }
 
                 if (CmbVisStyle != null)
                 {
@@ -52,7 +58,9 @@ namespace DanzFlyout
                 {
                     CmbVisMonitor.SelectedIndex = Math.Clamp(SettingsConfig.Current.VisualizerMonitorIndex, 0, 1);
                 }
-
+                if (ToggleMediaPill != null)
+                UpdateToggleVisual(ToggleMediaPill,
+                    SettingsConfig.Current.EnableMediaFlyout);
                 // Interactive Media Flyout Controls
                 if (CmbMediaMonitor != null)
                 {
@@ -188,6 +196,23 @@ namespace DanzFlyout
             SettingsConfig.Save();
             App.VisualizerInstance?.CheckEnabledState();
             RefreshDashboard();
+        }
+        
+        private void ToggleTaskbarMediaControls_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsConfig.Current.ShowTaskbarMediaControls =
+                !SettingsConfig.Current.ShowTaskbarMediaControls;
+
+            if (ToggleTaskbarMediaControlsPill != null)
+            {
+                UpdateToggleVisual(
+                    ToggleTaskbarMediaControlsPill,
+                    SettingsConfig.Current.ShowTaskbarMediaControls);
+            }
+
+            SettingsConfig.Save();
+
+            App.VisualizerInstance?.RefreshTaskbarMediaControlsVisibility();
         }
 
         private void CmbVisStyle_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -461,24 +486,52 @@ namespace DanzFlyout
         }
 
         private void ToggleNativeMediaFlyout_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsConfig.Current.HideWindowsMediaFlyout = !SettingsConfig.Current.HideWindowsMediaFlyout;
+{
+    SettingsConfig.Current.HideWindowsMediaFlyout =
+        !SettingsConfig.Current.HideWindowsMediaFlyout;
 
-            if (ToggleNativeMediaPill != null)
-                UpdateToggleVisual(ToggleNativeMediaPill, SettingsConfig.Current.HideWindowsMediaFlyout);
+    if (ToggleNativeMediaPill != null)
+        UpdateToggleVisual(
+            ToggleNativeMediaPill,
+            SettingsConfig.Current.HideWindowsMediaFlyout);
 
-            SettingsConfig.Save();
-        }
+    SettingsConfig.Save();
+}
+
+private void ToggleMediaFlyout_Click(object sender, RoutedEventArgs e)
+{
+    SettingsConfig.Current.EnableMediaFlyout =
+        !SettingsConfig.Current.EnableMediaFlyout;
+
+    if (ToggleMediaPill != null)
+    {
+        UpdateToggleVisual(
+            ToggleMediaPill,
+            SettingsConfig.Current.EnableMediaFlyout);
+    }
+
+    SettingsConfig.Save();
+
+    App.SetMediaFlyoutEnabled(
+        SettingsConfig.Current.EnableMediaFlyout);
+}
 
         private void ToggleAutoStart_Click(object sender, RoutedEventArgs e)
-        {
-            SettingsConfig.Current.AutoStartWithWindows = !SettingsConfig.Current.AutoStartWithWindows;
-            if (ToggleAutoPill != null) UpdateToggleVisual(ToggleAutoPill, SettingsConfig.Current.AutoStartWithWindows);
-            SettingsConfig.ApplyAutoStart(SettingsConfig.Current.AutoStartWithWindows);
-            SettingsConfig.Save();
-            RefreshDashboard();
-        }
+{
+    SettingsConfig.Current.AutoStartWithWindows =
+        !SettingsConfig.Current.AutoStartWithWindows;
 
+    if (ToggleAutoPill != null)
+        UpdateToggleVisual(
+            ToggleAutoPill,
+            SettingsConfig.Current.AutoStartWithWindows);
+
+    SettingsConfig.ApplyAutoStart(
+        SettingsConfig.Current.AutoStartWithWindows);
+
+    SettingsConfig.Save();
+    RefreshDashboard();
+}
         private void UpdateToggleVisual(Border badge, bool isEnabled)
         {
             badge.Background = isEnabled ? new SolidColorBrush(Color.FromArgb(48, 94, 234, 212)) : new SolidColorBrush(Color.FromArgb(25, 255, 255, 255));
